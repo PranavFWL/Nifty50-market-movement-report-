@@ -94,11 +94,13 @@ def period_series(df, date_col, label_fmt):
     """
     Return every period row with its label — used for the
     monthly dropdown where user selects how far back to look.
+    Includes full ISO date string for precise JS filtering.
     """
     df = df.copy()
     df['label'] = pd.to_datetime(df[date_col]).dt.strftime(label_fmt)
     df['ym']    = pd.to_datetime(df[date_col]).dt.strftime('%Y-%m')
-    cols = ['ym', 'label'] + METRICS
+    df['dt']    = pd.to_datetime(df[date_col]).dt.strftime('%Y-%m-%d')
+    cols = ['dt', 'ym', 'label'] + METRICS
     return df[cols].to_dict(orient='records')
 
 def build_payload(daily):

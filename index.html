@@ -598,14 +598,34 @@
       return src.filter(r => r.year >= last - yrs + 1);
     }
 
-    // ── filter series by year range ───────────────────────────
-    function filterSeries(src, selId) {
+    // ── filter weekly series by day range ────────────────────
+    function filterWeeklySeries(src, selId) {
       const val = document.getElementById(selId).value;
-      if (!src || !src.length || val === 'all') return src;
-      const yrs = parseInt(val);
+      if (!src || !src.length) return src;
+      const lastRow = src[src.length - 1];
+      if (!lastRow.dt) return src;   // guard: old data.json without dt field
+      const days = parseInt(val);
+      const parseDt = s => new Date(s.replace(/-/g, '/'));
+      const lastDt = parseDt(lastRow.dt);
+      const cutoff = new Date(lastDt);
+      cutoff.setDate(cutoff.getDate() - days);
+      const cy = cutoff.getFullYear();
+      const cm = String(cutoff.getMonth() + 1).padStart(2, '0');
+      const cd = String(cutoff.getDate()).padStart(2, '0');
+      const cutoffStr = cy + '-' + cm + '-' + cd;
+      return src.filter(r => r.dt && r.dt >= cutoffStr);
+    }
+
+    // ── filter monthly series by month count ──────────────────
+    function filterMonthlySeries(src, selId) {
+      const val = document.getElementById(selId).value;
+      if (!src || !src.length) return src;
+      const months = parseInt(val);
       const last = src[src.length - 1].ym;
       const [ly, lm] = last.split('-').map(Number);
-      const cutoff = `${ly - yrs}-${String(lm).padStart(2, '0')}`;
+      let cy = ly, cm = lm - months;
+      while (cm <= 0) { cm += 12; cy -= 1; }
+      const cutoff = `${cy}-${String(cm).padStart(2, '0')}`;
       return src.filter(r => r.ym >= cutoff);
     }
 
@@ -622,14 +642,14 @@
     // ── update series charts ──────────────────────────────────
     function updateWS() {
       renderSeries4(['ws-max', 'ws-close', 'ws-upper', 'ws-lower'],
-        filterSeries(D.weekly_series, 'selWS'), 'label', COLORS);
+        filterWeeklySeries(D.weekly_series, 'selWS'), 'label', COLORS);
     }
     function updateMS() {
       renderSeries4(['ms-max', 'ms-close', 'ms-upper', 'ms-lower'],
-        filterSeries(D.monthly_series, 'selMS'), 'label', COLORS);
+        filterMonthlySeries(D.monthly_series, 'selMS'), 'label', COLORS);
     }
 
-    // ── build series dropdown ─────────────────────────────────
+    // ── build yearly dropdown (all time options) ─────────────
     function buildDrop(selId, totalYears, defaultYrs) {
       const sel = document.getElementById(selId);
       const OPTS = [[1, 'Last 1 year'], [2, 'Last 2 years'], [3, 'Last 3 years'],
@@ -645,6 +665,42 @@
       all.value = 'all'; all.textContent = 'All time';
       if (defaultYrs === 0 || totalYears < 1) all.selected = true;
       sel.appendChild(all);
+    }
+
+    // ── build per-week dropdown (1 week → 1 year max) ─────────
+    function buildWeekDrop(selId) {
+      const sel = document.getElementById(selId);
+      const OPTS = [
+        ['7d', 'Last 1 week'],
+        ['14d', 'Last 2 weeks'],
+        ['30d', 'Last 1 month'],
+        ['90d', 'Last 3 months'],
+        ['180d', 'Last 6 months'],
+        ['365d', 'Last 1 year'],
+      ];
+      OPTS.forEach(([v, lbl]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = lbl;
+        if (v === '365d') o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+
+    // ── build per-month dropdown (1 month → 1 year max) ───────
+    function buildMonthDrop(selId) {
+      const sel = document.getElementById(selId);
+      const OPTS = [
+        ['1', 'Last 1 month'],
+        ['3', 'Last 3 months'],
+        ['6', 'Last 6 months'],
+        ['12', 'Last 1 year'],
+      ];
+      OPTS.forEach(([v, lbl]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = lbl;
+        if (v === '12') o.selected = true;
+        sel.appendChild(o);
+      });
     }
 
     // ── init ──────────────────────────────────────────────────
@@ -663,9 +719,9 @@
 
         const ty = m.total_years || 10;
         buildDrop('selWY', ty, 0);
-        buildDrop('selWS', ty, 1);
+        buildWeekDrop('selWS');
         buildDrop('selMY', ty, 0);
-        buildDrop('selMS', ty, 1);
+        buildMonthDrop('selMS');
 
         // render weekly (visible on load)
         updateWY();
