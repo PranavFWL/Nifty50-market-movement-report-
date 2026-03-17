@@ -44,7 +44,6 @@
       min-height: 100vh;
     }
 
-    /* header */
     .hdr {
       display: flex;
       justify-content: space-between;
@@ -98,14 +97,12 @@
       }
     }
 
-    /* body */
     .body {
       max-width: 1100px;
       margin: 0 auto;
       padding: 32px;
     }
 
-    /* big section tabs */
     .tabs {
       display: flex;
       gap: 4px;
@@ -148,7 +145,6 @@
       display: block;
     }
 
-    /* sub-section */
     .sub-hdr {
       display: flex;
       align-items: center;
@@ -184,7 +180,6 @@
       margin-bottom: 16px;
     }
 
-    /* select */
     select {
       font-family: var(--mono);
       font-size: 12px;
@@ -202,7 +197,6 @@
       border-color: var(--accent);
     }
 
-    /* grid */
     .grid2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -216,7 +210,6 @@
       }
     }
 
-    /* card */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -244,7 +237,6 @@
       height: 190px;
     }
 
-    /* legend */
     .legend {
       display: flex;
       gap: 16px;
@@ -267,7 +259,6 @@
       display: inline-block;
     }
 
-    /* states */
     .state {
       display: flex;
       flex-direction: column;
@@ -324,12 +315,138 @@
 
       <!-- tabs -->
       <div class="tabs">
-        <button class="tab active" onclick="switchTab('weekly', this)">Weekly</button>
+        <button class="tab active" onclick="switchTab('daily', this)">Daily</button>
+        <button class="tab" onclick="switchTab('weekly', this)">Weekly</button>
         <button class="tab" onclick="switchTab('monthly', this)">Monthly</button>
       </div>
 
+      <!-- ══ DAILY ══ -->
+      <div id="sec-daily" class="section active">
+
+        <!-- Per day -->
+        <div class="sub-hdr">
+          <div class="sub-title">Per day</div>
+          <select id="selDS" onchange="updateDS()"></select>
+        </div>
+        <p class="sub-desc">Each data point = one daily candle's range</p>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Max range (H−L)</div>
+            <div class="card-sub">(High − Low) / Open %</div>
+            <div class="chart-wrap"><canvas id="ds-max"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Closing range (|O−C|)</div>
+            <div class="card-sub">|Open − Close| / Open %</div>
+            <div class="chart-wrap"><canvas id="ds-close"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Upper range (H−O)</div>
+            <div class="card-sub">(High − Open) / Open %</div>
+            <div class="chart-wrap"><canvas id="ds-upper"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Lower range (O−L)</div>
+            <div class="card-sub">(Open − Low) / Open %</div>
+            <div class="chart-wrap"><canvas id="ds-lower"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Gap up / Gap down -->
+        <div class="sub-hdr">
+          <div class="sub-title">Gap up / Gap down</div>
+          <select id="selGS" onchange="updateGS()"></select>
+        </div>
+        <p class="sub-desc">Gap % = (Today Open − Yesterday Close) / Yesterday Close × 100 &nbsp;·&nbsp; Green = gap up
+          &nbsp;·&nbsp; Red = gap down</p>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Gap per day</div>
+            <div class="card-sub">Each bar = one day's gap %</div>
+            <div class="chart-wrap"><canvas id="gs-daily"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Yearly avg gap</div>
+            <div class="card-sub">Average gap % per year</div>
+            <div class="chart-wrap"><canvas id="gy-avg"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Yearly max gap up</div>
+            <div class="card-sub">Biggest single gap up per year</div>
+            <div class="chart-wrap"><canvas id="gy-max"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Yearly max gap down</div>
+            <div class="card-sub">Biggest single gap down per year</div>
+            <div class="chart-wrap"><canvas id="gy-min"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Yearly average -->
+        <div class="sub-hdr">
+          <div class="sub-title">Yearly average</div>
+          <select id="selDY" onchange="updateDY()"></select>
+        </div>
+        <p class="sub-desc">Avg · worst · calmest daily candle range per year</p>
+        <div class="legend">
+          <span><span class="lb" style="background:var(--accent)"></span>Avg</span>
+          <span><span class="lb" style="background:var(--blue)"></span>Max (worst day)</span>
+          <span><span class="lb" style="background:var(--red)"></span>Min (calmest day)</span>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Max range (H−L)</div>
+            <div class="card-sub">Avg · worst · calmest day per year</div>
+            <div class="chart-wrap"><canvas id="dy-max"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Closing range (|O−C|)</div>
+            <div class="card-sub">Avg · worst · calmest day per year</div>
+            <div class="chart-wrap"><canvas id="dy-close"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Upper range (H−O)</div>
+            <div class="card-sub">Avg · worst · calmest day per year</div>
+            <div class="chart-wrap"><canvas id="dy-upper"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Lower range (O−L)</div>
+            <div class="card-sub">Avg · worst · calmest day per year</div>
+            <div class="chart-wrap"><canvas id="dy-lower"></canvas></div>
+          </div>
+        </div>
+
+      </div><!-- /daily -->
+
       <!-- ══ WEEKLY ══ -->
-      <div id="sec-weekly" class="section active">
+      <div id="sec-weekly" class="section">
+        <div class="sub-hdr">
+          <div class="sub-title">Per week</div>
+          <select id="selWS" onchange="updateWS()"></select>
+        </div>
+        <p class="sub-desc">Each data point = one weekly candle's actual range</p>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Max range (H−L)</div>
+            <div class="card-sub">(High − Low) / Open %</div>
+            <div class="chart-wrap"><canvas id="ws-max"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Closing range (|O−C|)</div>
+            <div class="card-sub">|Open − Close| / Open %</div>
+            <div class="chart-wrap"><canvas id="ws-close"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Upper range (H−O)</div>
+            <div class="card-sub">(High − Open) / Open %</div>
+            <div class="chart-wrap"><canvas id="ws-upper"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Lower range (O−L)</div>
+            <div class="card-sub">(Open − Low) / Open %</div>
+            <div class="chart-wrap"><canvas id="ws-lower"></canvas></div>
+          </div>
+        </div>
 
         <div class="sub-hdr">
           <div class="sub-title">Yearly average</div>
@@ -366,38 +483,37 @@
           </div>
         </div>
 
-        <div class="sub-hdr">
-          <div class="sub-title">Per week</div>
-          <select id="selWS" onchange="updateWS()"></select>
-        </div>
-        <p class="sub-desc">Each data point = one weekly candle's actual range</p>
-        <div class="grid2">
-          <div class="card">
-            <div class="card-title">Max range (H−L)</div>
-            <div class="card-sub">(High − Low) / Open %</div>
-            <div class="chart-wrap"><canvas id="ws-max"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Closing range (|O−C|)</div>
-            <div class="card-sub">|Open − Close| / Open %</div>
-            <div class="chart-wrap"><canvas id="ws-close"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Upper range (H−O)</div>
-            <div class="card-sub">(High − Open) / Open %</div>
-            <div class="chart-wrap"><canvas id="ws-upper"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Lower range (O−L)</div>
-            <div class="card-sub">(Open − Low) / Open %</div>
-            <div class="chart-wrap"><canvas id="ws-lower"></canvas></div>
-          </div>
-        </div>
-
       </div><!-- /weekly -->
 
       <!-- ══ MONTHLY ══ -->
       <div id="sec-monthly" class="section">
+        <div class="sub-hdr">
+          <div class="sub-title">Per month</div>
+          <select id="selMS" onchange="updateMS()"></select>
+        </div>
+        <p class="sub-desc">Each data point = one monthly candle's actual range</p>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Max range (H−L)</div>
+            <div class="card-sub">(High − Low) / Open %</div>
+            <div class="chart-wrap"><canvas id="ms-max"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Closing range (|O−C|)</div>
+            <div class="card-sub">|Open − Close| / Open %</div>
+            <div class="chart-wrap"><canvas id="ms-close"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Upper range (H−O)</div>
+            <div class="card-sub">(High − Open) / Open %</div>
+            <div class="chart-wrap"><canvas id="ms-upper"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Lower range (O−L)</div>
+            <div class="card-sub">(Open − Low) / Open %</div>
+            <div class="chart-wrap"><canvas id="ms-lower"></canvas></div>
+          </div>
+        </div>
 
         <div class="sub-hdr">
           <div class="sub-title">Yearly stats</div>
@@ -432,34 +548,6 @@
           </div>
         </div>
 
-        <div class="sub-hdr">
-          <div class="sub-title">Per month</div>
-          <select id="selMS" onchange="updateMS()"></select>
-        </div>
-        <p class="sub-desc">Each data point = one monthly candle's actual range</p>
-        <div class="grid2">
-          <div class="card">
-            <div class="card-title">Max range (H−L)</div>
-            <div class="card-sub">(High − Low) / Open %</div>
-            <div class="chart-wrap"><canvas id="ms-max"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Closing range (|O−C|)</div>
-            <div class="card-sub">|Open − Close| / Open %</div>
-            <div class="chart-wrap"><canvas id="ms-close"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Upper range (H−O)</div>
-            <div class="card-sub">(High − Open) / Open %</div>
-            <div class="chart-wrap"><canvas id="ms-upper"></canvas></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Lower range (O−L)</div>
-            <div class="card-sub">(Open − Low) / Open %</div>
-            <div class="chart-wrap"><canvas id="ms-lower"></canvas></div>
-          </div>
-        </div>
-
       </div><!-- /monthly -->
 
     </div><!-- /dash -->
@@ -479,11 +567,12 @@
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       el.classList.add('active');
       document.getElementById('sec-' + id).classList.add('active');
-      if (id === 'monthly') { updateMY(); updateMS(); }
+      if (id === 'daily') { updateDY(); updateDS(); updateGS(); }
       if (id === 'weekly') { updateWY(); updateWS(); }
+      if (id === 'monthly') { updateMY(); updateMS(); }
     }
 
-    // ── chart options ─────────────────────────────────────────
+    // ── shared chart options ──────────────────────────────────
     function makeOpts(n) {
       return {
         responsive: true, maintainAspectRatio: false, animation: false,
@@ -499,17 +588,11 @@
         },
         scales: {
           x: {
-            ticks: {
-              color: TICK, font: { family: MONO, size: 11 },
-              maxRotation: 45, maxTicksLimit: Math.min(n, 20), autoSkip: true
-            },
+            ticks: { color: TICK, font: { family: MONO, size: 11 }, maxRotation: 45, maxTicksLimit: Math.min(n, 20), autoSkip: true },
             grid: { color: GRID }, border: { color: '#2a2e2b' }
           },
           y: {
-            ticks: {
-              color: TICK, font: { family: MONO, size: 11 },
-              callback: v => v.toFixed(2) + '%'
-            },
+            ticks: { color: TICK, font: { family: MONO, size: 11 }, callback: v => v.toFixed(2) + '%' },
             grid: { color: GRID }, border: { color: '#2a2e2b' }
           }
         }
@@ -524,18 +607,9 @@
         data: {
           labels,
           datasets: [
-            {
-              label: 'Avg', data: avgs, borderColor: '#b5f542', backgroundColor: '#b5f54215',
-              borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#b5f542', tension: 0.3, fill: true
-            },
-            {
-              label: 'Max', data: highs, borderColor: '#5aaee8', backgroundColor: 'transparent',
-              borderWidth: 1.5, borderDash: [5, 4], pointRadius: 2, pointBackgroundColor: '#5aaee8', tension: 0.3, fill: false
-            },
-            {
-              label: 'Min', data: lows, borderColor: '#e05252', backgroundColor: 'transparent',
-              borderWidth: 1.5, borderDash: [5, 4], pointRadius: 2, pointBackgroundColor: '#e05252', tension: 0.3, fill: false
-            },
+            { label: 'Avg', data: avgs, borderColor: '#b5f542', backgroundColor: '#b5f54215', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#b5f542', tension: 0.3, fill: true },
+            { label: 'Max', data: highs, borderColor: '#5aaee8', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 2, pointBackgroundColor: '#5aaee8', tension: 0.3, fill: false },
+            { label: 'Min', data: lows, borderColor: '#e05252', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 2, pointBackgroundColor: '#e05252', tension: 0.3, fill: false },
           ]
         },
         options: makeOpts(labels.length)
@@ -567,6 +641,53 @@
       if (canvas) CH[id] = new Chart(canvas, cfg);
     }
 
+    // ── draw gap bar chart (green up / red down) ──────────────
+    function drawGapBars(id, labels, values) {
+      if (!labels || !labels.length) return;
+      const bgColors = values.map(v => v >= 0 ? 'rgba(181,245,66,0.75)' : 'rgba(224,82,82,0.75)');
+      const brdColors = values.map(v => v >= 0 ? '#b5f542' : '#e05252');
+      if (CH[id]) { CH[id].destroy(); delete CH[id]; }
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+      CH[id] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: bgColors,
+            borderColor: brdColors,
+            borderWidth: 1,
+            borderRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#191b1a', borderColor: '#2f332f', borderWidth: 1,
+              titleColor: '#b5f542', bodyColor: '#e4e7e4', padding: 10,
+              titleFont: { family: MONO, size: 11 }, bodyFont: { family: MONO, size: 11 },
+              callbacks: {
+                label: c => `  ${c.parsed.y >= 0 ? 'Gap up' : 'Gap down'}: ${c.parsed.y >= 0 ? '+' : ''}${c.parsed.y.toFixed(3)}%`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: TICK, font: { family: MONO, size: 11 }, maxRotation: 45, maxTicksLimit: 20, autoSkip: true },
+              grid: { color: GRID }, border: { color: '#2a2e2b' }
+            },
+            y: {
+              ticks: { color: TICK, font: { family: MONO, size: 11 }, callback: v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%' },
+              grid: { color: GRID }, border: { color: '#2a2e2b' }
+            }
+          }
+        }
+      });
+    }
+
     // ── render 4 yearly charts (avg/max/min per metric) ───────
     function renderYearly4(ids, rows) {
       if (!rows || !rows.length) return;
@@ -589,7 +710,7 @@
       });
     }
 
-    // ── filter yearly by year range ──────────────────────────
+    // ── filter helpers ────────────────────────────────────────
     function filterYearly(src, selId) {
       const val = document.getElementById(selId).value;
       if (!src || !src.length || val === 'all') return src;
@@ -598,25 +719,23 @@
       return src.filter(r => r.year >= last - yrs + 1);
     }
 
-    // ── filter weekly series by day range ────────────────────
-    function filterWeeklySeries(src, selId) {
+    function filterByDays(src, selId, dtKey) {
+      // dtKey is the field name containing a 'YYYY-MM-DD' string
       const val = document.getElementById(selId).value;
       if (!src || !src.length) return src;
       const lastRow = src[src.length - 1];
-      if (!lastRow.dt) return src;   // guard: old data.json without dt field
+      if (!lastRow[dtKey]) return src;
       const days = parseInt(val);
-      const parseDt = s => new Date(s.replace(/-/g, '/'));
-      const lastDt = parseDt(lastRow.dt);
+      const lastDt = new Date(lastRow[dtKey].replace(/-/g, '/'));
       const cutoff = new Date(lastDt);
       cutoff.setDate(cutoff.getDate() - days);
       const cy = cutoff.getFullYear();
       const cm = String(cutoff.getMonth() + 1).padStart(2, '0');
       const cd = String(cutoff.getDate()).padStart(2, '0');
-      const cutoffStr = cy + '-' + cm + '-' + cd;
-      return src.filter(r => r.dt && r.dt >= cutoffStr);
+      const cutoffStr = `${cy}-${cm}-${cd}`;
+      return src.filter(r => r[dtKey] && r[dtKey] >= cutoffStr);
     }
 
-    // ── filter monthly series by month count ──────────────────
     function filterMonthlySeries(src, selId) {
       const val = document.getElementById(selId).value;
       if (!src || !src.length) return src;
@@ -629,27 +748,62 @@
       return src.filter(r => r.ym >= cutoff);
     }
 
-    // ── update yearly charts ─────────────────────────────────
+    // ── update gap charts ─────────────────────────────────────
+    // FIX: single canonical updateGS() — no more duplicates.
+    // gap_series rows: { dt, ym, label, gap_pct }
+    // gap_yearly rows: { year, avg, max, min }
+    // Canvas IDs:      gs-daily, gy-avg, gy-max, gy-min
+    function updateGS() {
+      if (!D || !D.gap_series || !D.gap_series.length) return;
+      if (!D.gap_yearly || !D.gap_yearly.length) return;
+
+      // Per-day gap bars (filtered by selGS day-range dropdown)
+      const series = filterByDays(D.gap_series, 'selGS', 'dt');
+      drawGapBars('gs-daily', series.map(r => r.label), series.map(r => +(r.gap_pct || 0)));
+
+      // Yearly charts — always show all years
+      const yLabels = D.gap_yearly.map(r => String(r.year));
+      drawGapBars('gy-avg', yLabels, D.gap_yearly.map(r => +(r.avg || 0)));
+      drawGapBars('gy-max', yLabels, D.gap_yearly.map(r => +(r.max || 0)));
+      drawGapBars('gy-min', yLabels, D.gap_yearly.map(r => +(r.min || 0)));
+    }
+
+    // ── update daily range charts ─────────────────────────────
+    function updateDY() {
+      if (!D.daily_yearly || !D.daily_yearly.length) { console.warn('daily_yearly missing'); return; }
+      renderYearly4(['dy-max', 'dy-close', 'dy-upper', 'dy-lower'],
+        filterYearly(D.daily_yearly, 'selDY'));
+    }
+
+    function updateDS() {
+      if (!D.daily_series || !D.daily_series.length) { console.warn('daily_series missing'); return; }
+      renderSeries4(['ds-max', 'ds-close', 'ds-upper', 'ds-lower'],
+        filterByDays(D.daily_series, 'selDS', 'dt'), 'label', COLORS);
+    }
+
+    // ── update weekly charts ──────────────────────────────────
     function updateWY() {
       renderYearly4(['wy-max', 'wy-close', 'wy-upper', 'wy-lower'],
         filterYearly(D.weekly_yearly, 'selWY'));
     }
+
+    function updateWS() {
+      renderSeries4(['ws-max', 'ws-close', 'ws-upper', 'ws-lower'],
+        filterByDays(D.weekly_series, 'selWS', 'dt'), 'label', COLORS);
+    }
+
+    // ── update monthly charts ─────────────────────────────────
     function updateMY() {
       renderYearly4(['my-max', 'my-close', 'my-upper', 'my-lower'],
         filterYearly(D.monthly_yearly, 'selMY'));
     }
 
-    // ── update series charts ──────────────────────────────────
-    function updateWS() {
-      renderSeries4(['ws-max', 'ws-close', 'ws-upper', 'ws-lower'],
-        filterWeeklySeries(D.weekly_series, 'selWS'), 'label', COLORS);
-    }
     function updateMS() {
       renderSeries4(['ms-max', 'ms-close', 'ms-upper', 'ms-lower'],
         filterMonthlySeries(D.monthly_series, 'selMS'), 'label', COLORS);
     }
 
-    // ── build yearly dropdown (all time options) ─────────────
+    // ── dropdown builders ─────────────────────────────────────
     function buildDrop(selId, totalYears, defaultYrs) {
       const sel = document.getElementById(selId);
       const OPTS = [[1, 'Last 1 year'], [2, 'Last 2 years'], [3, 'Last 3 years'],
@@ -667,26 +821,43 @@
       sel.appendChild(all);
     }
 
-    // ── build per-week dropdown (1 week → 1 year max) ─────────
-    function buildWeekDrop(selId) {
+    function buildDayDrop(selId, defaultVal) {
       const sel = document.getElementById(selId);
       const OPTS = [
-        ['7d', 'Last 1 week'],
-        ['14d', 'Last 2 weeks'],
-        ['30d', 'Last 1 month'],
-        ['90d', 'Last 3 months'],
-        ['180d', 'Last 6 months'],
-        ['365d', 'Last 1 year'],
+        ['7', 'Last 1 week'],
+        ['14', 'Last 2 weeks'],
+        ['21', 'Last 3 weeks'],
+        ['28', 'Last 4 weeks'],
+        ['60', 'Last 2 months'],
+        ['90', 'Last 3 months'],
       ];
+      const def = defaultVal || '28';
       OPTS.forEach(([v, lbl]) => {
         const o = document.createElement('option');
         o.value = v; o.textContent = lbl;
-        if (v === '365d') o.selected = true;
+        if (v === def) o.selected = true;
         sel.appendChild(o);
       });
     }
 
-    // ── build per-month dropdown (1 month → 1 year max) ───────
+    function buildWeekDrop(selId) {
+      const sel = document.getElementById(selId);
+      const OPTS = [
+        ['7', 'Last 1 week'],
+        ['14', 'Last 2 weeks'],
+        ['30', 'Last 1 month'],
+        ['90', 'Last 3 months'],
+        ['180', 'Last 6 months'],
+        ['365', 'Last 1 year'],
+      ];
+      OPTS.forEach(([v, lbl]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = lbl;
+        if (v === '365') o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+
     function buildMonthDrop(selId) {
       const sel = document.getElementById(selId);
       const OPTS = [
@@ -718,14 +889,20 @@
           `${m.symbol}  ·  ${Number(m.daily_rows).toLocaleString()} daily bars  ·  ${m.from} → ${m.to}`;
 
         const ty = m.total_years || 10;
+
+        // Build dropdowns — each selector built exactly once
+        buildDrop('selDY', ty, 0);
+        buildDayDrop('selDS', '28');
+        buildDayDrop('selGS', '28');   // gap series dropdown
         buildDrop('selWY', ty, 0);
         buildWeekDrop('selWS');
         buildDrop('selMY', ty, 0);
         buildMonthDrop('selMS');
 
-        // render weekly (visible on load)
-        updateWY();
-        updateWS();
+        // Render daily tab (visible on load)
+        updateDY();
+        updateDS();
+        updateGS();
 
       } catch (e) {
         document.getElementById('loading').style.display = 'none';

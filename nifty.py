@@ -3,11 +3,7 @@ nifty_report.py
 ───────────────
 1. Reads nifty_data.csv (daily bars, exported from Colab)
 2. Aggregates daily → weekly and monthly OHLC
-3. Computes 4 range metrics as % of open:
-     max_range_pct     = (high - low)   / open * 100
-     closing_range_pct = |open - close| / open * 100
-     upper_range_pct   = (high - open)  / open * 100
-     lower_range_pct   = (open - low)   / open * 100
+3. Computes range metrics and gap stats
 4. Saves data.json
 5. Starts local server and opens browser
 
@@ -34,10 +30,7 @@ def clean(obj):
 def load_data():
     p = Path(CSV_FILE)
     if not p.exists():
-        raise FileNotFoundError(
-            f"'{CSV_FILE}' not found.\n"
-            f"Run the Colab notebook first and place the CSV in:\n{Path.cwd()}"
-        )
+        raise FileNotFoundError(f"'{CSV_FILE}' not found. Run Colab first.\n{Path.cwd()}")
     print(f"Reading {CSV_FILE}...")
     df = pd.read_csv(p)
     df['date'] = pd.to_datetime(df['date'])
@@ -48,36 +41,22 @@ def load_data():
     return df
 
 def aggregate(df, freq):
-    """
-    Aggregate daily OHLC to weekly (freq='W-FRI') or monthly (freq='MS').
-    Weekly : open=Mon open, high=week high, low=week low, close=Fri close
-    Monthly: open=1st day open, high=month high, low=month low, close=last day close
-    """
     df = df.set_index('date')
     agg = df.groupby(pd.Grouper(freq=freq)).agg(
-        open  = ('open',  'first'),
-        high  = ('high',  'max'),
-        low   = ('low',   'min'),
-        close = ('close', 'last'),
+        open=('open','first'), high=('high','max'),
+        low=('low','min'),     close=('close','last'),
     ).dropna().reset_index()
-    agg = agg[(agg['high'] > agg['low']) & (agg['open'] > 0)]
-    return agg
+    return agg[(agg['high'] > agg['low']) & (agg['open'] > 0)]
 
 def compute_pct(df):
     df = df.copy()
-    df['max_range_pct']     = ((df['high'] - df['low'])           / df['open'] * 100).round(3)
-    df['closing_range_pct'] = ((df['open'] - df['close']).abs()   / df['open'] * 100).round(3)
-    df['upper_range_pct']   = ((df['high'] - df['open'])          / df['open'] * 100).round(3)
-    df['lower_range_pct']   = ((df['open'] - df['low'])           / df['open'] * 100).round(3)
+    df['max_range_pct']     = ((df['high'] - df['low'])          / df['open'] * 100).round(3)
+    df['closing_range_pct'] = ((df['open'] - df['close']).abs()  / df['open'] * 100).round(3)
+    df['upper_range_pct']   = ((df['high'] - df['open'])         / df['open'] * 100).round(3)
+    df['lower_range_pct']   = ((df['open'] - df['low'])          / df['open'] * 100).round(3)
     return df
 
 def yearly_stats(df, date_col):
-    """
-    For each year:
-      avg  = mean of all candle ranges
-      high = max single candle range (worst week / worst month)
-      low  = min single candle range (calmest week / month)
-    """
     df = df.copy()
     df['year'] = pd.to_datetime(df[date_col]).dt.year
     rows = []
@@ -91,21 +70,45 @@ def yearly_stats(df, date_col):
     return rows
 
 def period_series(df, date_col, label_fmt):
-    """
-    Return every period row with its label — used for the
-    monthly dropdown where user selects how far back to look.
-    Includes full ISO date string for precise JS filtering.
-    """
     df = df.copy()
     df['label'] = pd.to_datetime(df[date_col]).dt.strftime(label_fmt)
     df['ym']    = pd.to_datetime(df[date_col]).dt.strftime('%Y-%m')
     df['dt']    = pd.to_datetime(df[date_col]).dt.strftime('%Y-%m-%d')
-    cols = ['dt', 'ym', 'label'] + METRICS
-    return df[cols].to_dict(orient='records')
+    return df[['dt','ym','label'] + METRICS].to_dict(orient='records')
+
+def gap_stats(daily):
+    """
+    gap_pct = (today open - yesterday close) / yesterday close * 100
+    Positive = gap up, Negative = gap down.
+    Returns (series, yearly) — a clean tuple, nothing else.
+    """
+    df = daily.sort_values('date').copy()
+    df['prev_close'] = df['close'].shift(1)
+    df = df.dropna(subset=['prev_close'])
+    df['gap_pct'] = ((df['open'] - df['prev_close']) / df['prev_close'] * 100).round(3)
+    df['year']    = df['date'].dt.year
+    df['dt']      = df['date'].dt.strftime('%Y-%m-%d')
+    df['label']   = df['date'].dt.strftime('%d %b %y')
+    df['ym']      = df['date'].dt.strftime('%Y-%m')
+
+    series = df[['dt','ym','label','gap_pct']].to_dict(orient='records')
+
+    yearly = []
+    for yr, grp in df.groupby('year'):
+        yearly.append({
+            'year': int(yr),
+            'avg': round(float(grp['gap_pct'].mean()), 3),
+            'max': round(float(grp['gap_pct'].max()),  3),
+            'min': round(float(grp['gap_pct'].min()),  3),
+        })
+
+    return series, yearly
 
 def build_payload(daily):
-    weekly  = compute_pct(aggregate(daily, 'W-FRI'))
-    monthly = compute_pct(aggregate(daily, 'MS'))
+    daily_c          = compute_pct(daily.copy())
+    weekly           = compute_pct(aggregate(daily, 'W-FRI'))
+    monthly          = compute_pct(aggregate(daily, 'MS'))
+    gap_ser, gap_yr  = gap_stats(daily)
 
     return {
         'meta': {
@@ -115,13 +118,14 @@ def build_payload(daily):
             'to':          str(daily['date'].max().date()),
             'total_years': int((daily['date'].max() - daily['date'].min()).days // 365),
         },
-        # Yearly averages (for the yearly section)
+        'daily_yearly':   yearly_stats(daily_c, 'date'),
         'weekly_yearly':  yearly_stats(weekly,  'date'),
         'monthly_yearly': yearly_stats(monthly, 'date'),
-
-        # Full period series (for dropdown-filtered section)
+        'daily_series':   period_series(daily_c, 'date', '%d %b %y'),
         'weekly_series':  period_series(weekly,  'date', '%d %b %y'),
         'monthly_series': period_series(monthly, 'date', '%b %Y'),
+        'gap_series':     gap_ser,
+        'gap_yearly':     gap_yr,
     }
 
 def start_server(port):
@@ -140,10 +144,10 @@ if __name__ == '__main__':
     out = Path(OUTPUT)
     out.write_text(json.dumps(clean(payload), indent=2), encoding='utf-8')
     print(f"\nSaved → {out.resolve()}")
-    print(f"  Weekly yearly rows  : {len(payload['weekly_yearly'])}")
-    print(f"  Monthly yearly rows : {len(payload['monthly_yearly'])}")
-    print(f"  Weekly series rows  : {len(payload['weekly_series'])}")
-    print(f"  Monthly series rows : {len(payload['monthly_series'])}")
+    print(f"  Gap series rows  : {len(payload['gap_series'])}")
+    print(f"  Gap yearly rows  : {len(payload['gap_yearly'])}")
+    print(f"  Weekly yearly    : {len(payload['weekly_yearly'])}")
+    print(f"  Monthly yearly   : {len(payload['monthly_yearly'])}")
 
     t = threading.Thread(target=start_server, args=(PORT,), daemon=True)
     t.start()
